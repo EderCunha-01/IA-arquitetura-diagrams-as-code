@@ -70,103 +70,88 @@ Antes de propor uma arquitetura, seria necessário responder:
 
 ## Diagramas Mermaid
 
-Os diagramas abaixo estão embutidos diretamente no README para facilitar visualização no GitHub.
+Abaixo estão duas versões mais apresentáveis, pensadas para leitura direta em README do GitHub.
 
-- [Diagrama de sequência](Diagrama/consulta-faturas-sequencia.mmd)
-- [Diagrama de contexto](Diagrama/consulta-faturas-contexto.mmd)
+### Visão de contexto
 
-### Diagrama de sequência
+```mermaid
+flowchart LR
+    classDef cliente fill:#EAF3FF,stroke:#4F81BD,stroke-width:1.5px,color:#1F2A44;
+    classDef sistema fill:#F2E8FF,stroke:#8A63D2,stroke-width:1.5px,color:#1F2A44;
+    classDef externo fill:#F4F4F4,stroke:#666666,stroke-width:1.2px,color:#1F2A44;
+    classDef rel fill:#FFF2CC,stroke:#D9A441,stroke-width:1px,color:#1F2A44;
+
+    A[Aplicativo do cliente\nconsulta de faturas]:::cliente
+    S[Sistema de Consulta de Faturas\n<contêiner>\nTecnologia a definir]:::sistema
+
+    ID[Provedor de identidade\n<externo>]:::externo
+    CT[Cadastro de clientes e contas\n<externo>]:::externo
+    FAT[Faturamento\n<externo>\nValores, vencimentos e status]:::externo
+    DOC[Serviço de documentos\n<externo>\nArquivos da fatura]:::externo
+
+    A -->|Solicita faturas e acesso\na documentos autorizados| S
+    S -->|Valida identidade e sessão| ID
+    S -->|Verifica vínculo da conta| CT
+    S -->|Consulta faturas e pagamentos| FAT
+    S -->|Obtém documento autorizado| DOC
+
+    ID -.->|autenticação| S
+    CT -.->|autorização| S
+    FAT -.->|dados oficiais| S
+    DOC -.->|documentos| S
+```
+
+### Fluxo principal de consulta
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor App as Aplicativo (externo)
+    actor Cliente as Cliente
+    participant App as Aplicativo
     participant S as Sistema de Consulta de Faturas
-    participant Id as Identidade (externa)
-    participant C as Contas e Serviços (externo)
-    participant F as Faturamento (externo)
-    participant R as Registros (a definir)
+    participant Id as Provedor de identidade
+    participant C as Cadastro de contas e serviços
+    participant F as Sistema de faturamento
+    participant D as Serviço de documentos
 
-    App->>S: Solicitar faturas da conta do cliente
+    Cliente->>App: Acessa a tela de faturas
+    App->>S: Solicita faturas da conta do cliente
 
-    S->>Id: Validar identidade
-    Id-->>S: Resultado da validação
+    S->>Id: Valida identidade e sessão
+    Id-->>S: Identidade confirmada
 
     alt Identidade inválida
-        S-->>App: Retornar falha de autenticação
-        S->>R: Registrar falha com dados mínimos
+        S-->>App: Retorna erro de autenticação
     else Identidade válida
-        S->>C: Verificar acesso à conta e aos serviços
-        C-->>S: Resultado da autorização
+        S->>C: Verifica acesso à conta e aos serviços
+        C-->>S: Autorização da conta confirmada
 
         alt Acesso negado
-            S-->>App: Acesso não permitido
-            S->>R: Registrar falha de autorização
+            S-->>App: Informa que o cliente não tem acesso
         else Acesso permitido
-            S->>F: Consultar faturas do contrato atual
-            F-->>S: Faturas e documentos
+            S->>F: Consulta faturas e status de pagamento
+            F-->>S: Lista de faturas e detalhes
 
-            alt Sistema de faturamento indisponível
-                S-->>App: Informar indisponibilidade temporária
-                S->>R: Registrar falha operacional
-            else Faturas disponíveis
-                S->>R: Registrar acesso e consulta
-                R-->>S: Confirmação de auditoria
-                S-->>App: Exibir faturas e detalhes
+            alt Sistema indisponível
+                S-->>App: Informa indisponibilidade temporária
+            else Dados disponíveis
+                S-->>App: Exibe faturas, vencimento e valores
 
                 alt Documento disponível
-                    S->>F: Solicitar documento da fatura
-                    F-->>S: Arquivo PDF ou documento associado
-                    S-->>App: Permitir acesso ao documento
+                    S->>D: Solicita documento da fatura
+                    D-->>S: Arquivo da fatura
+                    S-->>App: Permite abrir o documento
                 else Documento indisponível
-                    S-->>App: Informar que o documento não está disponível
+                    S-->>App: Informa que o documento não está disponível
                 end
             end
         end
     end
 ```
 
-### Diagrama de contexto
+### Observação
 
-```mermaid
-flowchart LR
-    subgraph A[Aplicativo (externo)]
-        App[Aplicativo do cliente\nconsulta de fatura]
-    end
+Esses diagramas foram pensados para serem visualmente mais limpos e adaptados ao uso em README do GitHub, mantendo a mesma semântica do cenário de consulta de faturas.
 
-    subgraph B[Sistema de Consulta de Faturas]
-        S[Aplicação de Consulta de Faturas\n<contêiner>\nTecnologia a definir]
-    end
-
-    subgraph C[Provedor de identidade]
-        Id[Identidade\n<external>]
-    end
-
-    subgraph D[Fonte de contas e serviços]
-        CS[Contas e serviços\n<external>\nVínculos oficiais entre\ncliente, contas e serviços]
-    end
-
-    subgraph E[Fonte oficial de faturamento]
-        F[Faturamento\n<external>\nCompetência, vencimento,\nvalor e situação de pagamento]
-    end
-
-    subgraph G[Fonte de documentos de fatura]
-        Doc[Documentos de fatura\n<external>\nDocumentos quando\ndisponíveis]
-    end
-
-    App -->|Consulta faturas e acesso\na documentos autorizados| S
-    S -->|Valida identidade e sessão| Id
-    S -->|Verifica vínculo e acesso| CS
-    S -->|Consulta faturas e dados de pagamento| F
-    S -->|Obtém documentos para\nacesso autorizado| Doc
-
-    Id -.->|Autenticação| S
-    CS -.->|Autorização| S
-    F -.->|Dados oficiais| S
-    Doc -.->|Documentos| S
-
-    classDef ext fill:#f2f2f2,stroke:#666,stroke-width:1px;
-    classDef core fill:#e9d7f5,stroke:#8a6ab0,stroke-width:1px;
-    class App,Id,CS,F,Doc ext;
-    class S core;
-```
+- [Arquivo de contexto em Mermaid](Diagrama/consulta-faturas-contexto.mmd)
+- [Arquivo de sequência em Mermaid](Diagrama/consulta-faturas-sequencia.mmd)
