@@ -30,9 +30,9 @@ Ele é responsável por:
 - Informar quando os dados estiverem indisponíveis ou tiverem atualização defasada.
 - Registrar eventos operacionais e de auditoria sem expor dados pessoais desnecessariamente.
 
-Ele **não é responsável** por emitir faturas, calcular cobranças ou confirmar pagamentos. Essas responsabilidades pertencem aos sistemas de faturamento e financeiros, considerados externos ao escopo.
+Ele **não é responsável** por emitir faturas, calcular cobranças ou confirmar pagamentos. Essas responsabilidades pertencem aos sistemas de faturamento e financeiros, considerados externos ao sistema em estudo.
 
-O aplicativo é o canal de interação com o cliente; o provedor de identidade autentica o usuário. A autorização para consultar uma conta deve ser validada pelo sistema, não apenas pela interface.
+O aplicativo é o canal de interação com o cliente; o provedor de identidade autentica o usuário. A autorização para consultar uma conta deve ser validada pelo sistema, não apenas pela autenticação.
 
 ### 4. Integrações
 
@@ -67,3 +67,106 @@ Antes de propor uma arquitetura, seria necessário responder:
 4. **Legado:** existem APIs disponíveis? Quais são seus limites, horários de operação e garantias de disponibilidade?
 5. **Histórico e documentos:** quantos meses de faturas serão exibidos e por quanto tempo os documentos ficam disponíveis?
 6. **Operação e governança:** quem responde por incidentes, quais eventos precisam de auditoria e quais políticas internas se aplicam?
+
+## Diagramas Mermaid
+
+Os diagramas abaixo estão embutidos diretamente no README para facilitar visualização no GitHub.
+
+- [Diagrama de sequência](Diagrama/consulta-faturas-sequencia.mmd)
+- [Diagrama de contexto](Diagrama/consulta-faturas-contexto.mmd)
+
+### Diagrama de sequência
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor App as Aplicativo (externo)
+    participant S as Sistema de Consulta de Faturas
+    participant Id as Identidade (externa)
+    participant C as Contas e Serviços (externo)
+    participant F as Faturamento (externo)
+    participant R as Registros (a definir)
+
+    App->>S: Solicitar faturas da conta do cliente
+
+    S->>Id: Validar identidade
+    Id-->>S: Resultado da validação
+
+    alt Identidade inválida
+        S-->>App: Retornar falha de autenticação
+        S->>R: Registrar falha com dados mínimos
+    else Identidade válida
+        S->>C: Verificar acesso à conta e aos serviços
+        C-->>S: Resultado da autorização
+
+        alt Acesso negado
+            S-->>App: Acesso não permitido
+            S->>R: Registrar falha de autorização
+        else Acesso permitido
+            S->>F: Consultar faturas do contrato atual
+            F-->>S: Faturas e documentos
+
+            alt Sistema de faturamento indisponível
+                S-->>App: Informar indisponibilidade temporária
+                S->>R: Registrar falha operacional
+            else Faturas disponíveis
+                S->>R: Registrar acesso e consulta
+                R-->>S: Confirmação de auditoria
+                S-->>App: Exibir faturas e detalhes
+
+                alt Documento disponível
+                    S->>F: Solicitar documento da fatura
+                    F-->>S: Arquivo PDF ou documento associado
+                    S-->>App: Permitir acesso ao documento
+                else Documento indisponível
+                    S-->>App: Informar que o documento não está disponível
+                end
+            end
+        end
+    end
+```
+
+### Diagrama de contexto
+
+```mermaid
+flowchart LR
+    subgraph A[Aplicativo (externo)]
+        App[Aplicativo do cliente\nconsulta de fatura]
+    end
+
+    subgraph B[Sistema de Consulta de Faturas]
+        S[Aplicação de Consulta de Faturas\n<contêiner>\nTecnologia a definir]
+    end
+
+    subgraph C[Provedor de identidade]
+        Id[Identidade\n<external>]
+    end
+
+    subgraph D[Fonte de contas e serviços]
+        CS[Contas e serviços\n<external>\nVínculos oficiais entre\ncliente, contas e serviços]
+    end
+
+    subgraph E[Fonte oficial de faturamento]
+        F[Faturamento\n<external>\nCompetência, vencimento,\nvalor e situação de pagamento]
+    end
+
+    subgraph G[Fonte de documentos de fatura]
+        Doc[Documentos de fatura\n<external>\nDocumentos quando\ndisponíveis]
+    end
+
+    App -->|Consulta faturas e acesso\na documentos autorizados| S
+    S -->|Valida identidade e sessão| Id
+    S -->|Verifica vínculo e acesso| CS
+    S -->|Consulta faturas e dados de pagamento| F
+    S -->|Obtém documentos para\nacesso autorizado| Doc
+
+    Id -.->|Autenticação| S
+    CS -.->|Autorização| S
+    F -.->|Dados oficiais| S
+    Doc -.->|Documentos| S
+
+    classDef ext fill:#f2f2f2,stroke:#666,stroke-width:1px;
+    classDef core fill:#e9d7f5,stroke:#8a6ab0,stroke-width:1px;
+    class App,Id,CS,F,Doc ext;
+    class S core;
+```
