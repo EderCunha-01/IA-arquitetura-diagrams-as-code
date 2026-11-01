@@ -3,11 +3,21 @@
 Você é um arquiteto de software sênior. Antes de gerar qualquer diagrama, identifique lacunas e faça perguntas de esclarecimento.
 
 ## Descrição (linguagem natural)
+### 1. Escopo
+
+O sistema permite ao cliente:
+- Consultar as faturas dos serviços vinculados à sua conta.
+- Visualizar competência, vencimento, valor e situação de pagamento.
+- Acessar o documento da fatura, quando disponível.
+
+**Fora do escopo:** realizar pagamentos, negociar dívidas, contestar cobranças, alterar dados cadastrais ou calcular valores de faturamento.
+
+
 
 ### Objetivo do diagrama
 Tipo: estrutural  
 Nível: C4 — Containers  
-Escopo: fluxo completo do disparo proativo, desde o upload do arquivo até a entrega no canal e possível interação com o Digital Assistant Engine.
+Escopo: O sistema funciona como uma **camada de consulta autorizada**, conectando o aplicativo às fontes oficiais de faturamento. Esta descrição delimita o problema e suas dependências, mas **não decide** se a solução deve usar cache, processamento assíncrono, microserviços ou determinada tecnologia. Essas escolhas dependem das respostas às lacunas e da comparação entre alternativas.
 
 ### Restrições
 - Marcar integrações externas como `<<external>>`.
