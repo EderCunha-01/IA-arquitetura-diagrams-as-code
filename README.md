@@ -68,9 +68,9 @@ Antes de propor uma arquitetura, seria necessário responder:
 5. **Histórico e documentos:** quantos meses de faturas serão exibidos e por quanto tempo os documentos ficam disponíveis?
 6. **Operação e governança:** quem responde por incidentes, quais eventos precisam de auditoria e quais políticas internas se aplicam?
 
-## Diagramas Mermaid
+### 7. Diagramas 
 
-Abaixo estão duas versões mais apresentáveis, pensadas para leitura direta em README do GitHub.
+Diagrama estrutural (ex.: visão de containers inspirada no C4) e um comportamental (ex.: diagrama de sequência de uma jornada crítica)
 
 ### Visão de contexto
 
