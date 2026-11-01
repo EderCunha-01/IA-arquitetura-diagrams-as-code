@@ -1,0 +1,46 @@
+sequenceDiagram
+    autonumber
+    actor App as Aplicativo (externo)
+    participant S as Sistema de Consulta de Faturas
+    participant Id as Identidade (externa)
+    participant C as Contas e Serviços (externo)
+    participant F as Faturamento (externo)
+    participant R as Registros (a definir)
+
+    App->>S: Solicitar faturas da conta do cliente
+
+    S->>Id: Validar identidade
+    Id-->>S: Resultado da validação
+
+    alt Identidade inválida
+        S-->>App: Retornar falha de autenticação
+        S->>R: Registrar falha com dados mínimos
+    else Identidade válida
+        S->>C: Verificar acesso à conta e aos serviços
+        C-->>S: Resultado da autorização
+
+        alt Acesso negado
+            S-->>App: Acesso não permitido
+            S->>R: Registrar falha de autorização
+        else Acesso permitido
+            S->>F: Consultar faturas do contrato atual
+            F-->>S: Faturas e documentos
+
+            alt Sistema de faturamento indisponível
+                S-->>App: Informar indisponibilidade temporária
+                S->>R: Registrar falha operacional
+            else Faturas disponíveis
+                S->>R: Registrar acesso e consulta
+                R-->>S: Confirmação de auditoria
+                S-->>App: Exibir faturas e detalhes
+
+                alt Documento disponível
+                    S->>F: Solicitar documento da fatura
+                    F-->>S: Arquivo PDF ou documento associado
+                    S-->>App: Permitir acesso ao documento
+                else Documento indisponível
+                    S-->>App: Informar que o documento não está disponível
+                end
+            end
+        end
+    end
